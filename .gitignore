@@ -2,12 +2,24 @@
 node_modules
 .env
 
-# Terraform
-terraform/.terraform/           # Ignore the .terraform/ directory inside the terraform/ folder
-terraform/.terraform.lock.hcl   # Ignore the lock file inside the terraform/ folder
-terraform/*.tfstate             # Ignore the main state file (e.g., terraform/terraform.tfstate)
-terraform/*.tfstate.*           # Ignore state backups (e.g., terraform/terraform.tfstate.backup)
-terraform/crash.log             # If crash.log appears in terraform/
+# Terraform build and state files
+.terraform/             # This should catch everything inside .terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*.tfvars
+*.tfvars.json
+
+# Since the main.tf is in `terraform/`, `terraform init` creates `terraform/.terraform/`
+# So, the specific rules below are also important to have:
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/crash.log
 terraform/override.tf
 terraform/override.tf.json
 terraform/*.tfvars
