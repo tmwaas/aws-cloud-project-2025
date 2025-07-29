@@ -3,12 +3,20 @@ node_modules
 .env
 
 # Terraform
-.terraform/
-*.tfstate*
-.terraform.lock.hcl # Optional: if you want to ignore the lock file
-crash.log
-override.tf
-override.tf.json
-*.tfvars
-*.tfvars.json
+terraform/.terraform/           # Ignore the .terraform/ directory inside the terraform/ folder
+terraform/.terraform.lock.hcl   # Ignore the lock file inside the terraform/ folder
+terraform/*.tfstate             # Ignore the main state file (e.g., terraform/terraform.tfstate)
+terraform/*.tfstate.*           # Ignore state backups (e.g., terraform/terraform.tfstate.backup)
+terraform/crash.log             # If crash.log appears in terraform/
+terraform/override.tf
+terraform/override.tf.json
+terraform/*.tfvars
+terraform/*.tfvars.json
+
+# Ignore outputs, which are often sensitive
+terraform/terraform.tfvars
+terraform/terraform.tfvars.json
+
+
+
 

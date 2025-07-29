@@ -51,34 +51,34 @@ resource "aws_cloudwatch_log_group" "app" {
   retention_in_days = 7
 }
 
-resource "aws_opensearch_domain" "app_logs" {
-  domain_name = "aws-cloud-app-logs"
+#resource "aws_opensearch_domain" "app_logs" {
+#  domain_name = "aws-cloud-app-logs"
 
-  cluster_config {
-    instance_type = "t3.small.search"
-  }
+#  cluster_config {
+#    instance_type = "t3.small.search"
+#  }
 
-  ebs_options {
-    ebs_enabled = true
-    volume_size = 10
-  }
+#  ebs_options {
+#    ebs_enabled = true
+#    volume_size = 10
+#  }
 
-  engine_version = "OpenSearch_1.3"
+#  engine_version = "OpenSearch_1.3"
 
-  access_policies = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Principal = "*",
-      Action = "es:*",
-      Resource = "arn:aws:es:${var.region}:*:domain/aws-cloud-app-logs/*"
-    }]
-  })
+#  access_policies = jsonencode({
+#    Version = "2012-10-17",
+#    Statement = [{
+#      Effect = "Allow",
+#      Principal = "*",
+#      Action = "es:*",
+#      Resource = "arn:aws:es:${var.region}:*:domain/aws-cloud-app-logs/*"
+#    }]
+#})
 
-  advanced_options = {
-    "rest.action.multi.allow_explicit_index" = "true"
-  }
-}
+#  advanced_options = {
+#    "rest.action.multi.allow_explicit_index" = "true"
+#  }
+#}
 
 resource "aws_ecs_task_definition" "app" {
   family                   = "aws-cloud-task"
