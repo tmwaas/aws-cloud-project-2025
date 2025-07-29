@@ -10,6 +10,6 @@ output "vpc_id" {
   value = module.vpc.vpc_id
 }
 
-output "opensearch_endpoint" {
-  value = aws_opensearch_domain.app_logs.endpoint
-}
+# output "opensearch_endpoint" {
+#  value = aws_opensearch_domain.app_logs.endpoint
+# }
