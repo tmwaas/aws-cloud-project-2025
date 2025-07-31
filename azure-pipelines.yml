@@ -11,13 +11,13 @@ stages:
       - job: Verify
         displayName: 'Verify AWS Access'
         steps:
-          # AWS CLI installation 
+          # AWS CLI installation        
           - script: |
-              echo "Installing AWS CLI"
+              echo "Installing or updating AWS CLI"
               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
               unzip awscliv2.zip
-              sudo ./aws/install
-            displayName: 'Install AWS CLI'
+              sudo ./aws/install --update  
+            displayName: 'Install or Update AWS CLI'              
           
           # Verifying AWS CLI access
           - script: |
