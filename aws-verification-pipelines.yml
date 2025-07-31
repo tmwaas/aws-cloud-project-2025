@@ -1,0 +1,24 @@
+trigger:
+  - main  # Ganti dengan branch yang sesuai jika tidak menggunakan main
+
+variables:
+  - group: aws-cloud-project-2025  # Variabel Group yang berisi AWS Access Key dan Secret Key
+
+stages:
+  - stage: VerifyAWSConnection
+    displayName: 'Verify AWS CLI Connection'
+    jobs:
+      - job: Verify
+        displayName: 'Verify AWS Access'
+        steps:
+          # Step untuk menginstal AWS CLI jika belum terinstal
+          - task: UseAwsCli@1
+            inputs:
+              awsCredentials: 'AWS-Connection'  # Nama dari AWS service connection yang kamu buat
+              regionName: 'us-east-1'  # Ganti dengan region AWS yang sesuai
+          
+          # Step untuk menjalankan perintah AWS CLI untuk verifikasi
+          - script: |
+              echo "Verifying AWS CLI Access"
+              aws sts get-caller-identity --output text
+            displayName: 'Run AWS CLI Command'
