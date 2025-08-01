@@ -7,7 +7,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  - group: aws-credentials
+  - group: aws-cloud-project-2025
   - name: AWS_REGION
     value: 'us-east-1'
 
