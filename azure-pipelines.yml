@@ -8,27 +8,35 @@ pool:
 
 variables:
   - group: aws-credentials
-    AWS_REGION: 'us-east-1'
+  - name: AWS_REGION: 
+    value: 'us-east-1'
 
 stages:
   - stage: Terraform
+    displayName: 'Provision Infrastructure with Terraform'
     jobs:
     - job: DeployInfra
+      displayName: 'Terraform Apply'
       steps:
       - checkout: self
+
       - task: TerraformInstaller@1
+        displayName: 'Install Terraform'
         inputs:
           terraformVersion: 'latest'
+
       - script: |
           cd terraform
           terraform init
           terraform plan
           terraform apply -auto-approve
+        displayName: 'Run Terraform'
         env:
           AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
           AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
 
   - stage: DeployApp
+    displayName: 'Build & Push Docker Image'
     dependsOn: Terraform
     jobs:
     - job: BuildPushImage
@@ -36,9 +44,9 @@ stages:
       - script: |
           cd app
           docker build -t my-aws-app .
-          aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin <your_aws_account_id>.dkr.ecr.$(AWS_REGION).amazonaws.com
-          docker tag my-aws-app <your_aws_account_id>.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
-          docker push <your_aws_account_id>.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
+          aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com
+          docker tag my-aws-app 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
+          docker push 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
         env:
           AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
           AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
