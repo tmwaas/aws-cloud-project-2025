@@ -8,18 +8,18 @@ variables:
   AWS_REGION: 'eu-central-1'
 
 stages:
-- stage: Deploy
-  displayName: 'Terraform Deployment to AWS'
-  jobs:
-  - job: Terraform
-    displayName: 'Terraform Plan and Apply'
-    steps:
-    - checkout: self
+  - stage: Deploy
+    displayName: 'Terraform Deployment to AWS'
+    jobs:
+    - job: Terraform
+      displayName: 'Terraform Plan and Apply'
+      steps:
+      - checkout: self
 
-    - task: TerraformInstaller@1
-      displayName: 'Install Terraform'
-      inputs:
-        terraformVersion: '1.12.2'  
+      - task: TerraformInstaller@1
+        displayName: 'Install Terraform'
+        inputs:
+          terraformVersion: '1.12.2'  
 
     - script: |
         cd terraform
@@ -56,7 +56,7 @@ stages:
           AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
           AWS_DEFAULT_REGION: $(AWS_REGION)
           
-- stage: DeployApp
+  - stage: DeployApp
     dependsOn: Terraform
     jobs:
       - job: BuildPushImage
