@@ -1,46 +1,74 @@
 trigger:
-  branches:
-    include:
-      - main
+- main
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  - group: aws-cloud-project-2025
-  - name: AWS_REGION
-    value: 'us-east-1'
+  AWS_REGION: 'eu-central-1'
 
 stages:
-  - stage: Terraform
-    displayName: 'Provision Infrastructure with Terraform'
-    jobs:
-    - job: DeployInfra
+- stage: Deploy
+  displayName: 'Terraform Deployment to AWS'
+  jobs:
+  - job: Terraform
+    displayName: 'Terraform Plan and Apply'
+    steps:
+    - checkout: self
+
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: '1.12.2'  
+
+    - script: |
+        cd terraform
+        terraform init
+        terraform plan -out=tfplan
+      displayName: 'Terraform Init and Plan'
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_DEFAULT_REGION: $(AWS_REGION)
+
+    - script: |
+        cd terraform
+        terraform apply -auto-approve tfplan
       displayName: 'Terraform Apply'
-      steps:
-      - checkout: self
-      - script: |
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_DEFAULT_REGION: $(AWS_REGION)
+      continueOnError: true
+
+    - task: PowerShell@2
+      displayName: 'Rollback on Failure'
+      condition: failed()
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "Rolling back: Terraform destroy"
           cd terraform
-          terraform init
-          terraform plan
-          terraform apply -auto-approve
-        displayName: 'Run Terraform'
+          terraform destroy -auto-approve
+        pwsh: true
         env:
           AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
           AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-
-  - stage: DeployApp
-    displayName: 'Build & Push Docker Image'
+          AWS_DEFAULT_REGION: $(AWS_REGION)
+          
+- stage: DeployApp
     dependsOn: Terraform
     jobs:
-    - job: BuildPushImage
-      steps:
-      - script: |
-          cd app
-          docker build -t my-aws-app .
-          aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com
-          docker tag my-aws-app 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
-          docker push 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
-        env:
-          AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-          AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+      - job: BuildPushImage
+        steps:
+          - checkout: self
+          - script: |
+              cd app
+              docker build -t my-aws-app .
+              aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com
+              docker tag my-aws-app 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
+              docker push 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
+            displayName: 'Build and Push Docker Image'
+            env:
+              AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+              AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)          
