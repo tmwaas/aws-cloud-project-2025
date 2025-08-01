@@ -1,27 +1,44 @@
 trigger:
-  - main
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
 
 variables:
-  - group: aws-cloud-project-2025  
+  - group: aws-credentials
+  AWS_REGION: 'us-east-1'
 
 stages:
-  - stage: VerifyAWSConnection
-    displayName: 'Verify AWS CLI Connection'
+  - stage: Terraform
     jobs:
-      - job: Verify
-        displayName: 'Verify AWS Access'
-        steps:
-          # AWS CLI installation        
-          - script: |
-              echo "Installing or updating AWS CLI"
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              unzip awscliv2.zip
-              sudo ./aws/install --update  
-            displayName: 'Install or Update AWS CLI'              
-          
-          # Verifying AWS CLI access
-          - script: |
-              echo "Verifying AWS CLI Access"
-              aws sts get-caller-identity --output text
-            displayName: 'Run AWS CLI Command'
+    - job: DeployInfra
+      steps:
+      - checkout: self
+      - task: TerraformInstaller@1
+        inputs:
+          terraformVersion: 'latest'
+      - script: |
+          cd terraform
+          terraform init
+          terraform plan
+          terraform apply -auto-approve
+        env:
+          AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+          AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
 
+  - stage: DeployApp
+    dependsOn: Terraform
+    jobs:
+    - job: BuildPushImage
+      steps:
+      - script: |
+          cd app
+          docker build -t my-aws-app .
+          aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin <your_aws_account_id>.dkr.ecr.$(AWS_REGION).amazonaws.com
+          docker tag my-aws-app <your_aws_account_id>.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
+          docker push <your_aws_account_id>.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
+        env:
+          AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+          AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
