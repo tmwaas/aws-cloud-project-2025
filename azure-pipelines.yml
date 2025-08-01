@@ -11,57 +11,59 @@ stages:
   - stage: Deploy
     displayName: 'Terraform Deployment to AWS'
     jobs:
-    - job: Terraform
-      displayName: 'Terraform Plan and Apply'
-      steps:
-      - checkout: self
-
-      - task: TerraformInstaller@1
-        displayName: 'Install Terraform'
-        inputs:
-          terraformVersion: '1.12.2'  
-
-    - script: |
-        cd terraform
-        terraform init
-        terraform plan -out=tfplan
-      displayName: 'Terraform Init and Plan'
-      env:
-        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-        AWS_DEFAULT_REGION: $(AWS_REGION)
-
-    - script: |
-        cd terraform
-        terraform apply -auto-approve tfplan
-      displayName: 'Terraform Apply'
-      env:
-        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-        AWS_DEFAULT_REGION: $(AWS_REGION)
-      continueOnError: true
-
-    - task: PowerShell@2
-      displayName: 'Rollback on Failure'
-      condition: failed()
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Host "Rolling back: Terraform destroy"
-          cd terraform
-          terraform destroy -auto-approve
-        pwsh: true
-        env:
-          AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-          AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-          AWS_DEFAULT_REGION: $(AWS_REGION)
-          
-  - stage: DeployApp
-    dependsOn: Terraform
-    jobs:
-      - job: BuildPushImage
+      - job: Terraform
+        displayName: 'Terraform Plan and Apply'
         steps:
           - checkout: self
+
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: '1.12.2'
+
+          - script: |
+              cd terraform
+              terraform init
+              terraform plan -out=tfplan
+            displayName: 'Terraform Init and Plan'
+            env:
+              AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+              AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+              AWS_DEFAULT_REGION: $(AWS_REGION)
+
+          - script: |
+              cd terraform
+              terraform apply -auto-approve tfplan
+            displayName: 'Terraform Apply'
+            env:
+              AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+              AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+              AWS_DEFAULT_REGION: $(AWS_REGION)
+            continueOnError: true
+
+          - task: PowerShell@2
+            displayName: 'Rollback on Failure'
+            condition: failed()
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Rolling back: Terraform destroy"
+                cd terraform
+                terraform destroy -auto-approve
+              pwsh: true
+            env:
+              AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+              AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+              AWS_DEFAULT_REGION: $(AWS_REGION)
+
+  - stage: DeployApp
+    dependsOn: Deploy
+    jobs:
+      - job: BuildPushImage
+        displayName: 'Build and Push Docker Image'
+        steps:
+          - checkout: self
+
           - script: |
               cd app
               docker build -t my-aws-app .
@@ -71,4 +73,4 @@ stages:
             displayName: 'Build and Push Docker Image'
             env:
               AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-              AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)          
+              AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
