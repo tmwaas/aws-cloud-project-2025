@@ -18,14 +18,17 @@ module "vpc" {
   }
 }
 
+# Create ECS cluster
 resource "aws_ecs_cluster" "main" {
   name = "aws-cloud-cluster"
 }
 
+# Create ECR repository
 resource "aws_ecr_repository" "app" {
   name = "my-aws-app"
 }
 
+# IAM role for ECS Task
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "ecsTaskExecutionRole"
 
@@ -46,6 +49,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+# CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "app" {
   name              = "/ecs/aws-cloud-app"
   retention_in_days = 7
@@ -80,6 +84,7 @@ resource "aws_cloudwatch_log_group" "app" {
 #  }
 #}
 
+# ECS Task Definition
 resource "aws_ecs_task_definition" "app" {
   family                   = "aws-cloud-task"
   network_mode             = "awsvpc"
@@ -128,6 +133,7 @@ resource "aws_security_group" "ecs_service_sg" {
   }
 }
 
+# ECS service
 resource "aws_ecs_service" "app" {
   name            = "aws-cloud-service"
   cluster         = aws_ecs_cluster.main.id
