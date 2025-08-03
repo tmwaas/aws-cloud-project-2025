@@ -37,10 +37,6 @@ stages:
                 account_id=$(aws sts get-caller-identity --query Account --output text)
                 ecr_url="$account_id.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
 
-                echo "Checking for and creating ECR repository if it doesn't exist..."
-                aws ecr describe-repositories --repository-names $(ecrRepository) --region $AWS_DEFAULT_REGION || \
-                aws ecr create-repository --repository-name $(ecrRepository) --region $AWS_DEFAULT_REGION
-
                 echo "Logging into ECR..."
                 aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ecr_url
 
