@@ -1,74 +1,55 @@
 trigger:
-- main
+  branches:
+    include:
+      - main
+      - test-pipeline
+
+variables:
+  - group: aws-credentials
+  - name: awsRegion
+    value: 'us-east-1'
+  - name: ecrRepository
+    value: 'my-aws-app'
+  - name: imageTag
+    value: 'latest'
 
 pool:
   vmImage: 'ubuntu-latest'
 
-variables:
-  AWS_REGION: 'eu-central-1'
-
 stages:
-- stage: Deploy
-  displayName: 'Terraform Deployment to AWS'
-  jobs:
-  - job: Terraform
-    displayName: 'Terraform Plan and Apply'
-    steps:
-    - checkout: self
-
-    - task: TerraformInstaller@1
-      displayName: 'Install Terraform'
-      inputs:
-        terraformVersion: '1.12.2'  
-
-    - script: |
-        cd terraform
-        terraform init
-        terraform plan -out=tfplan
-      displayName: 'Terraform Init and Plan'
-      env:
-        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-        AWS_DEFAULT_REGION: $(AWS_REGION)
-
-    - script: |
-        cd terraform
-        terraform apply -auto-approve tfplan
-      displayName: 'Terraform Apply'
-      env:
-        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-        AWS_DEFAULT_REGION: $(AWS_REGION)
-      continueOnError: true
-
-    - task: PowerShell@2
-      displayName: 'Rollback on Failure'
-      condition: failed()
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Host "Rolling back: Terraform destroy"
-          cd terraform
-          terraform destroy -auto-approve
-        pwsh: true
-        env:
-          AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-          AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-          AWS_DEFAULT_REGION: $(AWS_REGION)
-          
-- stage: DeployApp
-    dependsOn: Terraform
+  - stage: BuildAndPush
+    displayName: Build and Push Docker Image to ECR
     jobs:
-      - job: BuildPushImage
+      - job: DockerBuildPush
+        displayName: Docker Build & Push
         steps:
           - checkout: self
-          - script: |
-              cd app
-              docker build -t my-aws-app .
-              aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com
-              docker tag my-aws-app 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
-              docker push 851725646175.dkr.ecr.$(AWS_REGION).amazonaws.com/my-aws-app
-            displayName: 'Build and Push Docker Image'
+
+          - task: Bash@3
+            inputs:
+              targetType: 'inline'
+              script: |
+                set -e
+                echo "Setting AWS Region..."
+                export AWS_DEFAULT_REGION=$(awsRegion)
+
+                echo "Getting AWS Account ID..."
+                account_id=$(aws sts get-caller-identity --query Account --output text)
+                ecr_url="$account_id.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+
+                echo "Logging into ECR..."
+                aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ecr_url
+
+                echo "Building Docker image..."
+                docker build -t $(ecrRepository):$(imageTag) -f app/Dockerfile app
+
+                echo "Tagging Docker image..."
+                docker tag $(ecrRepository):$(imageTag) $ecr_url/$(ecrRepository):$(imageTag)
+
+                echo "Pushing Docker image to ECR..."
+                docker push $ecr_url/$(ecrRepository):$(imageTag)
+
+                echo "✅ Docker image pushed to ECR successfully!"
             env:
               AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-              AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)          
+              AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
