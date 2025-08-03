@@ -28,6 +28,7 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
+                set -e
                 echo "Setting AWS Region..."
                 export AWS_DEFAULT_REGION=$(awsRegion)
 
@@ -39,7 +40,8 @@ stages:
                 aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ecr_url
 
                 echo "Building Docker image..."
-                docker build -t $(ecrRepository):$(imageTag) .
+               # docker build -t $(ecrRepository):$(imageTag) .
+                docker build -t $(ecrRepository):$(imageTag) -f app/Dockerfile app
 
                 echo "Tagging Docker image..."
                 docker tag $(ecrRepository):$(imageTag) $ecr_url/$(ecrRepository):$(imageTag)
