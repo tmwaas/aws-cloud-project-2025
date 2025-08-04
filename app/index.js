@@ -2,5 +2,10 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('This is my first AWS Cloud Project!'));
-app.listen(port, () => console.log(`App running on port ${port}`));
+app.get('/', (req, res) => {
+  res.send('This is my AWS Cloud Project 2025!');
+});
+
+app.listen(port, () => {
+  console.log(`App listening on port ${port}`);
+});
