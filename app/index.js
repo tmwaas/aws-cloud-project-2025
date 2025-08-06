@@ -3,7 +3,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-  res.send('This is my AWS Cloud Project 2025!');
+  res.send('This is my AWS Cloud Infra Project!');
 });
 
 app.listen(port, () => {
